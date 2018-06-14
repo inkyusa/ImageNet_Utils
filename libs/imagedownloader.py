@@ -14,6 +14,9 @@ else:
 class ImageNetDownloader:
     def __init__(self):
         self.host = 'http://www.image-net.org'
+	self.dnStatus=0
+	self.failCnt=0
+	self.maxFailCnt=2
 
     def download_file(self, url, desc=None, renamed_file=None):
         u = urllib2.urlopen(url)
@@ -106,18 +109,33 @@ class ImageNetDownloader:
                 print str(error)
 
     def downloadOriginalImages(self, wnid, username, accesskey):
-        download_url = 'http://www.image-net.org/download/synset?wnid=%s&username=%s&accesskey=%s&release=latest&src=stanford' % (wnid, username, accesskey)
-        try:
-             download_file = self.download_file(download_url, self.mkWnidDir(wnid), wnid + '_original_images.tar')
-        except Exception, erro:
-            print 'Fail to download : ' + download_url
-
-        currentDir = os.getcwd()
-        extracted_folder = os.path.join(wnid, wnid + '_original_images')
-        if not os.path.exists(extracted_folder):
-            os.mkdir(extracted_folder)
-        os.chdir(extracted_folder)
-        self.extractTarfile(download_file)
-        os.chdir(currentDir)
-        print 'Extract images to ' + extracted_folder
-
+	self.dnStatus=0
+	download_url = 'http://www.image-net.org/download/synset?wnid=%s&username=%s&accesskey=%s&release=latest&src=stanford' % (wnid, username, accesskey)
+        while(self.dnStatus!=3 or self.dnStatus!=4):
+		try:
+			download_file = self.download_file(download_url, self.mkWnidDir(wnid), wnid + '_original_images.tar')
+			self.dnStatus=1 #can start downloading but this doesn't mean it downloaded the wnid...
+        	except Exception, erro:
+			print 'Fail to download : ' + download_url
+			self.dnStatus=0 #can't start downloading, retry...
+			self.failCnt=self.failCnt+1
+			print 'failCnt=%d'%(self.failCnt)
+			if self.failCnt==self.maxFailCnt:
+				self.dnStatus=4 #Skip the current wnid.
+				self.failCnt=0
+				print 'Maximum trial reached, skip wnid=%s',wnid
+				return
+		if self.dnStatus==1:
+        		currentDir = os.getcwd()
+        		extracted_folder = os.path.join(wnid, wnid + '_original_images')
+        		if not os.path.exists(extracted_folder):
+            			os.mkdir(extracted_folder)
+        		os.chdir(extracted_folder)
+        		self.extractTarfile(download_file)
+        		os.chdir(currentDir)
+        		print 'Extract images to ' + extracted_folder
+			self.dnStatus=3 #finished to download the wnid.
+			self.failCnt=0
+			return
+		else:
+			print 'null download_file, try again'
