@@ -19,6 +19,12 @@ if __name__ == '__main__':
     # p.add_argument('--timeout', '-t', type=int, default=10, help='Timeout per image in seconds')
     # p.add_argument('--retry', '-r', type=int, default=10, help='Max count of retry for each image')
     p.add_argument('--verbose', '-v', action='store_true', help='Enable verbose log')
+    if (len(sys.argv) < 2):
+        print """\
+        You gave me too few arguments.
+        Usage:  ./downloadutilsTest03.py --downloadOriginalImages --wnids --file ./wnids/test-wnids.txt --destDir ./test
+        """
+        sys.exit(0)
     args = p.parse_args()
     print args.file[0]
     if args.wnid and wnIDs is None:

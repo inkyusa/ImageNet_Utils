@@ -16,7 +16,7 @@ class ImageNetDownloader:
         self.host = 'http://www.image-net.org'
 	self.dnStatus=0
 	self.failCnt=0
-	self.maxFailCnt=2
+	self.maxFailCnt=5 #How many times will we try to download synset in case there is an error (connection...)
 
     def download_file(self, url, desc=None, renamed_file=None):
         u = urllib2.urlopen(url)
@@ -59,9 +59,15 @@ class ImageNetDownloader:
         return filename
 
     def extractTarfile(self, filename):
-        tar = tarfile.open(filename)
+        try:
+            tar = tarfile.open(filename)
+        except Exception, error:
+            print str(error)
+            print "There was an error opening tarfile. The file might be corrupt or missing."
+            return 0
         tar.extractall()
         tar.close()
+        return 1
 
     def downloadBBox(self, wnid):
         filename = str(wnid) + '.tar.gz'
@@ -111,33 +117,36 @@ class ImageNetDownloader:
                 print str(error)
 
     def downloadOriginalImages(self, wnid, username, accesskey,destDir):
-	self.dnStatus=0
-	download_url = 'http://www.image-net.org/download/synset?wnid=%s&username=%s&accesskey=%s&release=latest&src=stanford' % (wnid, username, accesskey)
+        self.dnStatus=0
+        download_url = 'http://www.image-net.org/download/synset?wnid=%s&username=%s&accesskey=%s&release=latest&src=stanford' % (wnid, username, accesskey)
         while(self.dnStatus!=3 or self.dnStatus!=4):
-		try:
-			download_file = self.download_file(download_url, self.mkWnidDir(destDir,wnid), wnid + '_original_images.tar')
-			self.dnStatus=1 #can start downloading but this doesn't mean it downloaded the wnid...
-        	except Exception, erro:
-			print 'Fail to download : ' + download_url
-			self.dnStatus=0 #can't start downloading, retry...
-			self.failCnt=self.failCnt+1
-			print 'failCnt=%d'%(self.failCnt)
-			if self.failCnt==self.maxFailCnt:
-				self.dnStatus=4 #Skip the current wnid.
-				self.failCnt=0
-				print 'Maximum trial reached, skip wnid=%s',wnid
-				return
-		if self.dnStatus==1:
-        		currentDir = os.getcwd()
-        		extracted_folder = os.path.join(self.mkWnidDir(destDir,wnid), wnid + '_original_images')
-        		if not os.path.exists(extracted_folder):
-            			os.mkdir(extracted_folder)
-        		os.chdir(extracted_folder)
-        		self.extractTarfile(download_file)
-        		os.chdir(currentDir)
-        		print 'Extract images to ' + extracted_folder
-			self.dnStatus=3 #finished to download the wnid.
-			self.failCnt=0
-			return
-		else:
-			print 'null download_file, try again'
+            try:
+                download_file = self.download_file(download_url, self.mkWnidDir(destDir,wnid), wnid + '_original_images.tar')
+                self.dnStatus=1 #can start downloading but this doesn't mean it downloaded the wnid...
+            except Exception, erro:
+                print 'Fail to download : ' + download_url
+                self.dnStatus=0 #can't start downloading, retry...
+                self.failCnt=self.failCnt+1
+                print 'failCnt=%d'%(self.failCnt)
+                if self.failCnt==self.maxFailCnt:
+                    self.dnStatus=4 #Skip the current wnid.
+                    self.failCnt=0
+                    print 'Maximum trial reached, skip wnid=%s',wnid
+                    return
+            if self.dnStatus==1:
+                currentDir = os.getcwd()
+                extracted_folder = os.path.join(self.mkWnidDir(destDir,wnid), wnid + '_original_images')
+                if not os.path.exists(extracted_folder):
+                    os.mkdir(extracted_folder)
+                os.chdir(extracted_folder)
+                if self.extractTarfile(download_file):
+                    os.chdir(currentDir)
+                    print 'Extract images to ' + extracted_folder
+                else:
+                    print 'error in tar file, skip this wnid'
+                    return
+                self.dnStatus=3 #finished to download the wnid.
+                self.failCnt=0
+                return
+            else:
+                print 'null download_file, try again'
