@@ -90,10 +90,12 @@ class ImageNetDownloader:
 
         return imageUrls
 
-    def mkWnidDir(self, wnid):
-        if not os.path.exists(wnid):
-            os.mkdir(wnid)
-        return os.path.abspath(wnid)
+    def mkWnidDir(self, destDir,wnid):
+        destDirPath=os.path.join(destDir,str(wnid))
+        print 'destDirPath=%s'%(destDirPath)
+        if not os.path.exists(destDirPath):
+            os.mkdir(destDirPath)
+        return os.path.abspath(destDirPath)
 
     def downloadImagesByURLs(self, wnid, imageUrls):
         # save to the dir e.g: n005555_urlimages/
@@ -108,12 +110,12 @@ class ImageNetDownloader:
                 print 'Fail to download : ' + url
                 print str(error)
 
-    def downloadOriginalImages(self, wnid, username, accesskey):
+    def downloadOriginalImages(self, wnid, username, accesskey,destDir):
 	self.dnStatus=0
 	download_url = 'http://www.image-net.org/download/synset?wnid=%s&username=%s&accesskey=%s&release=latest&src=stanford' % (wnid, username, accesskey)
         while(self.dnStatus!=3 or self.dnStatus!=4):
 		try:
-			download_file = self.download_file(download_url, self.mkWnidDir(wnid), wnid + '_original_images.tar')
+			download_file = self.download_file(download_url, self.mkWnidDir(destDir,wnid), wnid + '_original_images.tar')
 			self.dnStatus=1 #can start downloading but this doesn't mean it downloaded the wnid...
         	except Exception, erro:
 			print 'Fail to download : ' + download_url
@@ -127,7 +129,7 @@ class ImageNetDownloader:
 				return
 		if self.dnStatus==1:
         		currentDir = os.getcwd()
-        		extracted_folder = os.path.join(wnid, wnid + '_original_images')
+        		extracted_folder = os.path.join(self.mkWnidDir(destDir,wnid), wnid + '_original_images')
         		if not os.path.exists(extracted_folder):
             			os.mkdir(extracted_folder)
         		os.chdir(extracted_folder)
