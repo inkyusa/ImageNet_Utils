@@ -1,3 +1,8 @@
+# Notice
+This is a fork of ImageNet_Utils repo and if you want to download solely particular images (e.g., apples, plants, trees etc) from ImageNet, please have a look [google doc](https://docs.google.com/document/d/11Z9uOww8JFzFda4gw8XgacejalwU7YLFUAnAFBYIY84/edit?usp=sharing) I wrote. How this works help someone.
+
+
+
 # ImageNet-Utils
 Utils to help download images, crop bounding box, GUI tool to annotate image in XML file etc.
 
